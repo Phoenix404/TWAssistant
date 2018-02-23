@@ -18,10 +18,11 @@ var minArmyPerAttack=10;
 var attackVillageDistance=4;
 var pointVillagesDistance = 150;
 var onlyKnightEnabled = false;
+var intervalIdMapManager;
 
 $(document).ready(function (){
     var screen = (window.location.href).match(/screen=map/);
-    if(screen !== null) isFarmingEnabled = confirm('Are you sure you want to Farming?');
+    if(screen !== null) isFarmingEnabled = confirm('Are you sure you want to farming on this tab?');
     if(isFarmingEnabled===true ){
         var nearVillages = 4;
         var mapXStart = getMyCoords().split("|");
@@ -35,6 +36,8 @@ $(document).ready(function (){
         setInterval(function () {confirmAttack();}, 500);//always
         console.log("Total Villages Id :" + villagesId);
     }
+});
+
 
     function getVillageIds($html) {return $($html).html().match(/map_village_\d+/gmi);}
     function getMyVillageId() {return $("a.nowrap.tooltip-delayed").attr("href").match(/\d+/)[0];}
@@ -42,7 +45,14 @@ $(document).ready(function (){
     function getNearAllVillages() {
         $myVillageId = "#map_village_"+getMyVillageId();
         $barbarianVillages = [];
-        $parent = $($myVillageId).parent();
+        $parent = $($myVillageId).parent().parent();
+        $children = $($parent).children();
+        for(var i = 0; i < $children.length; i++){
+            $vId = getVillageIds($children[i]);
+            $vId= getBarbsId($vId);
+            console.log($vid);
+        }
+        /*$parent = $($myVillageId).parent();
         $parent = getVillageIds($parent);
         $parent = getBarbsId($parent);
         $uRelative = $($($myVillageId).parent()).next();
@@ -54,6 +64,7 @@ $(document).ready(function (){
         $barbarianVillages = $barbarianVillages.concat($parent); // near village
         $barbarianVillages = $barbarianVillages.concat($uRelative); // a little bit far
         $barbarianVillages = $barbarianVillages.concat($bRelative); // a little bit far
+        */
         return $barbarianVillages;
     }
 
@@ -64,6 +75,19 @@ $(document).ready(function (){
         {
             $link = $("#"+ids[i]).attr("src");
             if($link.toLowerCase().indexOf("left")>0)
+                $barbsId.push(ids[i].replace("map_village_",""));
+        }
+        return $barbsId;
+    }
+    
+    function geyPlayerVillageId(ids)
+    {
+        $barbsId = [];
+        if(ids=== null ||ids.length===0 ) return [];
+        for(i=0;i<ids.length;i++)
+        {
+            $link = $("#"+ids[i]).attr("src");
+            if($link.toLowerCase().indexOf("left")<0)
                 $barbsId.push(ids[i].replace("map_village_",""));
         }
         return $barbsId;
@@ -97,43 +121,15 @@ $(document).ready(function (){
         }
         return $coordStr;
     }
-
-    function rallyPointArmyManager() {
-        totArmy = getTotalArmy();
-        if (totArmy < 10) {
-            return false;
-        }
-        prepareCoordinate();
-        if (totArmy === 1 && getKnight() === 1) {
-            setKnight(1);
-            attack();
-        }
-        if (getLight() >= 40) {
-            setLight(40);
-            setSpy(1);
-            attack();
-        }
-        if (getAxeman() >= 100) {
-            setAxeman(100);
-            setSpy(1);
-            attack();
-        }
-    }
-
+    
     function mapArmyManager(){
         var isfilled = false;
-        var scouts = getSpy();
-        
+        var scouts = getSpy();       
         CommandPopup.openRallyPoint({target:getNextVillageId()});
-        
         var villageInfo = attackVillageInfo();
-        console.log(villageInfo);
         if(villageInfo===null || villageInfo.length===0) return false;
-        console.log("not null");
         if(villageInfo[1]>attackVillageDistance) return false;
-        console.log("village distance pass");
         if(villageInfo[2]>pointVillagesDistance) return false;
-        console.log("Villa point pass");
         
         totArmy = getTotalArmy();
         
@@ -158,17 +154,31 @@ $(document).ready(function (){
              console.log("Attacking");
         }
 
-        //if(isUnitSendAble(50))
+        if(isArmyReadyForAttack(50))
         attack();
         //else
         //Dialog.close();
     }
 
-    function isUnitSendAble(max) {
+    function isArmyReadyForAttack(min, spyInculded=false)
+    {
+        return getTotalUnitReadyForAttack(spyInculded)>min;
+    }
+
+    function getTotalUnitReadyForAttack(spyInculded=false) {
         totUnit = parseInt($(".units-row>.unit-item.unit-item-spear").text())+
             parseInt($(".units-row>.unit-item.unit-item-axe").text())+
+            parseInt($(".units-row>.unit-item.unit-item-sword").text())+
+            parseInt($(".units-row>.unit-item.unit-item-archer").text())+
+            parseInt($(".units-row>.unit-item.unit-item-marcher").text())+
+            parseInt($(".units-row>.unit-item.unit-item-heavy").text())+
+            parseInt($(".units-row>.unit-item.unit-item-ram").text())+
+            parseInt($(".units-row>.unit-item.unit-item-catapult").text())+
+            parseInt($(".units-row>.unit-item.unit-item-knight").text())+
             parseInt($(".units-row>.unit-item-light").text());
-        return totUnit>=max;
+        
+        if(spyIncluded) parseInt($(".units-row>.unit-item.unit-item-spy").text());
+        return totUnit;
     }
 
     function prepareCoordinate() {
@@ -350,9 +360,6 @@ $(document).ready(function (){
         return $("#unit_input_knight").val(num);
     }
 
-});
-
-
 function addCoordinate(coord){
     coordinates.push(coord);
 }
@@ -360,3 +367,8 @@ function addCoordinate(coord){
 function addVillageId(id){
     villagesId.push(id);
 }
+
+
+
+
+
