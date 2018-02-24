@@ -20,22 +20,20 @@ var pointVillagesDistance = 150;
 var onlyKnightEnabled = false;
 var intervalIdMapManager;
 
-var sendAllArmyInOnce = false;
+var sendAllArmyInOnce = true;
 
 $(document).ready(function (){
     var screen = (window.location.href).match(/screen=map/);
-    if(screen !== null) isFarmingEnabled = confirm('Are you sure you want to farming on this tab?');
-    if(isFarmingEnabled===true ){
-        var mapXStart = getMyCoords().split("|");
-        var mapYStart= mapXStart[1]-attackVillageDistance;
-        mapXStart=mapXStart[0]-attackVillageDistance;
-        coordinates = getAllCoordinates(mapXStart, mapYStart, 9);
-        villagesId = getNearAllVillages();
 
+    villagesId = getNearAllVillages();
+    console.log("Total Villages Id :" + villagesId);
+    if(screen !== null) isFarmingEnabled = confirm('Are you sure you want to farming on this tab?');
+    var mapXStart = getMyCoords().split("|");
+    coordinates = getAllCoordinates(mapXStart[0]-attackVillageDistance, mapXStart[1]-attackVillageDistance, 9);
+    if(isFarmingEnabled===true ){
         //setInterval(function () {rallyPointArmyManager();}, 1000);
         intervalIdMapManager = setInterval(function () {mapArmyManager();}, 4000);
         //setInterval(function () {confirmAttack();}, 500);//always
-        console.log("Total Villages Id :" + villagesId);
     }
 });
 
@@ -55,7 +53,8 @@ function mapArmyManager(){
         return false;
     }
     if(sendAllArmyInOnce){
-        selectAllArmy();
+        setTimeout(function(){selectAllArmy()},100);
+        isFilled = true;
     }else {
         if (getKnight() === 1) {setKnight(1);setSpy(scoutSendPerAttack);isFilled = true;}
         if (getLight() >= LCSendPerAttack) {setLight(LCSendPerAttack);setSpy(scoutSendPerAttack);setRams(ramSendPerAttack);isFilled = true;}
@@ -64,11 +63,16 @@ function mapArmyManager(){
         else if (getHeavy() >= HCSendPerAttack) {setHeavy(HCSendPerAttack);setSpy(scoutSendPerAttack);setRams(ramSendPerAttack);isFilled = true;}
         else if (totArmy >= minArmyPerAttack) {selectAllArmy();setSpy(1);setRams(ramSendPerAttack);isFilled = true;}
     }
-
-    attack();
-    if(isArmyReadyForAttack(minArmyPerAttack) || isFilled===true) {
-        if (onlyKnightEnabled === false && getKnight() === 1) confirmAttack();
-    }else Dialog.close();
+    setTimeout(function(){attack()},200);
+    setTimeout(function(){
+        console.log(isArmyReadyForAttack(minArmyPerAttack) );
+        console.log(isFilled);
+        if((isArmyReadyForAttack(minArmyPerAttack) && isFilled===true) || (onlyKnightEnabled === true && getKnight() === 1)) {
+            console.log("Confirming...");
+                confirmAttack()
+        }else
+            Dialog.close();
+    },600);
 }
 
 function getVillageIds($html) {return $($html).html().match(/map_village_\d+/gmi);}
@@ -83,21 +87,9 @@ function getNearAllVillages() {
     for(var i = 0; i < $children.length; i++){
         $vId = getVillageIds($children[i]);
         $vId= getBarbsId($vId);
-        console.log($vid);
+        if($vId.length>0)
+        $barbarianVillages = $barbarianVillages.concat($vId);
     }
-    /*$parent = $($myVillageId).parent();
-    $parent = getVillageIds($parent);
-    $parent = getBarbsId($parent);
-    $uRelative = $($($myVillageId).parent()).next();
-    $uRelative = getVillageIds($uRelative);
-    $uRelative = getBarbsId($uRelative);
-    $bRelative = $($($myVillageId).parent()).prev();
-    $bRelative = getVillageIds($bRelative);
-    $bRelative = getBarbsId($bRelative);
-    $barbarianVillages = $barbarianVillages.concat($parent); // near village
-    $barbarianVillages = $barbarianVillages.concat($uRelative); // a little bit far
-    $barbarianVillages = $barbarianVillages.concat($bRelative); // a little bit far
-    */
     return $barbarianVillages;
 }
 
@@ -155,7 +147,8 @@ function getMyCoords() {
 }
 
 function isArmyReadyForAttack(min, spyInculded=false) {
-    return getTotalUnitReadyForAttack(spyInculded)>min;
+    x = (getTotalUnitReadyForAttack(spyInculded));
+    return x>min;
 }
 
 function getTotalUnitReadyForAttack(spyIncluded=false) {
@@ -238,6 +231,7 @@ function getMyPoint(){
 }
 
 function attack() {
+    console.log("Attackl");
     $("#target_attack").click();
 }
 
