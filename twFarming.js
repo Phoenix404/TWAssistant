@@ -3,24 +3,25 @@ var villagesId  = [];
 var totArmy = 0;
 var coordinates = [];
 //------------------------
-var spearSendPerAttack=20;
+var spearSendPerAttack=50;
 var axemanSendPerAttack=20;
 var archerSendPerAttack=20;
 
 var scoutSendPerAttack=1;
-var LCSendPerAttack=5;
+var LCSendPerAttack=10;
 var HCSendPerAttack=50;
 
-var ramSendPerAttack=15;
+var ramSendPerAttack=3;
 var catSendPerAttack=0;
 
-var minArmyPerAttack=10;
-var attackVillageDistance=4;
-var pointVillagesDistance = 150;
-var onlyKnightEnabled = false;
+var minArmyPerAttack=4;
+var attackVillageDistance=5;
+var pointVillagesDistance = 200;
+var onlyKnightEnabled = true;
 var intervalIdMapManager;
 
-var sendAllArmyInOnce = true;
+var sendAllArmyInOnce = false;
+var timeDelay=3000;
 
 $(document).ready(function (){
     var screen = (window.location.href).match(/screen=map/);
@@ -32,7 +33,7 @@ $(document).ready(function (){
     coordinates = getAllCoordinates(mapXStart[0]-attackVillageDistance, mapXStart[1]-attackVillageDistance, 9);
     if(isFarmingEnabled===true ){
         //setInterval(function () {rallyPointArmyManager();}, 1000);
-        intervalIdMapManager = setInterval(function () {mapArmyManager();}, 4000);
+        intervalIdMapManager = setInterval(function () {mapArmyManager();}, timeDelay);
         //setInterval(function () {confirmAttack();}, 500);//always
     }
 });
@@ -41,37 +42,44 @@ function mapArmyManager(){
     var isFilled = false;
     CommandPopup.openRallyPoint({target:getNextVillageId()});
 
+
     var villageInfo = attackVillageInfo();
     if(villageInfo===null || villageInfo.length===0) return false;
     if(villageInfo[1]>attackVillageDistance) return false;
     if(villageInfo[2]>pointVillagesDistance) return false;
 
     var scouts = getSpy();
+    var knight = getKnight();
     totArmy = getTotalArmy();
     if(totArmy-scouts < minArmyPerAttack && getKnight()!==1){
         Dialog.close();
         return false;
     }
+
     if(sendAllArmyInOnce){
-        setTimeout(function(){selectAllArmy()},100);
+        setTimeout(function(){selectAllArmy()},450);
         isFilled = true;
     }else {
-        if (getKnight() === 1) {setKnight(1);setSpy(scoutSendPerAttack);isFilled = true;}
-        if (getLight() >= LCSendPerAttack) {setLight(LCSendPerAttack);setSpy(scoutSendPerAttack);setRams(ramSendPerAttack);isFilled = true;}
-        else if (getAxeman() >= axemanSendPerAttack) {setAxeman(axemanSendPerAttack);setSpy(scoutSendPerAttack);setRams(ramSendPerAttack);isFilled = true;}
-        else if (getSpears() >= spearSendPerAttack) {setSpears(spearSendPerAttack);setSpy(scoutSendPerAttack);setRams(ramSendPerAttack);isFilled = true;}
-        else if (getHeavy() >= HCSendPerAttack) {setHeavy(HCSendPerAttack);setSpy(scoutSendPerAttack);setRams(ramSendPerAttack);isFilled = true;}
-        else if (totArmy >= minArmyPerAttack) {selectAllArmy();setSpy(1);setRams(ramSendPerAttack);isFilled = true;}
+        setTimeout(function(){
+            if (getKnight() === 1) {setKnight(1);setSpy(scoutSendPerAttack);isFilled = true;}
+            if (getLight() >= LCSendPerAttack) {setLight(LCSendPerAttack);setSpy(scoutSendPerAttack);setRams(ramSendPerAttack);isFilled = true;}
+            else if (getAxeman() >= axemanSendPerAttack) {setAxeman(axemanSendPerAttack);setSpy(scoutSendPerAttack);setRams(ramSendPerAttack);isFilled = true;}
+            else if (getSpears() >= spearSendPerAttack) {setAxeman(2);setSpears(spearSendPerAttack);setSpy(scoutSendPerAttack);setRams(ramSendPerAttack);isFilled = true;}
+            else if (getHeavy() >= HCSendPerAttack) {setHeavy(HCSendPerAttack);setSpy(scoutSendPerAttack);setRams(ramSendPerAttack);isFilled = true;}
+            else if (totArmy >= minArmyPerAttack) {selectAllArmy();setSpy(1);setRams(ramSendPerAttack);isFilled = true;}
+        },450);
     }
-    setTimeout(function(){attack()},200);
+    setTimeout(function(){attack()},500);
     setTimeout(function(){
         console.log(isArmyReadyForAttack(minArmyPerAttack) );
         console.log(isFilled);
-        if((isArmyReadyForAttack(minArmyPerAttack) && isFilled===true) || (onlyKnightEnabled === true && getKnight() === 1)) {
+        console.log(onlyKnightEnabled);
+        console.log(knight);
+        if((isArmyReadyForAttack(minArmyPerAttack) && isFilled===true) || (onlyKnightEnabled === true && knight === 1)) {
             console.log("Confirming...");
-                confirmAttack()
-        }else
-            Dialog.close();
+            confirmAttack()
+        }//else
+        //Dialog.close();
     },600);
 }
 
@@ -88,7 +96,7 @@ function getNearAllVillages() {
         $vId = getVillageIds($children[i]);
         $vId= getBarbsId($vId);
         if($vId.length>0)
-        $barbarianVillages = $barbarianVillages.concat($vId);
+            $barbarianVillages = $barbarianVillages.concat($vId);
     }
     return $barbarianVillages;
 }
